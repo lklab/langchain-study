@@ -6,6 +6,8 @@ with open('apikeys.json') as f:
     keys = json.load(f)
 
 os.environ["OPENAI_API_KEY"] = keys['OPENAI_API_KEY']
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = keys['LANGCHAIN_API_KEY']
 
 # initialize model
 from langchain_openai import ChatOpenAI
