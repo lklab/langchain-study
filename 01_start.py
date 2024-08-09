@@ -53,4 +53,32 @@ def lcel() :
     answer = chain.invoke({'country': '대한민국'})
     print(answer)
 
+def runnable() :
+    from operator import itemgetter
+
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.runnables import RunnableLambda
+    from langchain_openai import ChatOpenAI
+
+    prompt = ChatPromptTemplate.from_template("{a} + {b} 는 무엇인가요?")
+    model = ChatOpenAI(
+        model='gpt-3.5-turbo',
+        max_tokens=64,
+        temperature=0.1,
+    )
+
+    chain = (
+        {
+            "a": itemgetter("word1") | RunnableLambda(lambda x: len(x)),
+            "b": itemgetter("word2") | RunnableLambda(lambda x: len(x)),
+        }
+        | prompt
+        | model
+    )
+
+    answer = chain.invoke({"word1": "broccoli", "word2": "world"})
+    print(answer)
+
+# simpleTest()
 lcel()
+# runnable()
