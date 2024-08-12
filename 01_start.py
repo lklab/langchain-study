@@ -32,6 +32,26 @@ def simpleTest() :
     result = parser.invoke(aiMessage)
     print(result)
 
+def prompt() :
+    from langchain_openai import ChatOpenAI
+    from langchain_core.prompts import ChatPromptTemplate
+
+    system_template = "Translate the following into {language}:"
+    prompt_template = ChatPromptTemplate.from_messages(
+        [("system", system_template), ("user", "{text}")]
+    )
+    message = prompt_template.invoke({"language": "korean", "text": "hi"})
+    print(message)
+
+    model = ChatOpenAI(
+        model='gpt-3.5-turbo',
+        max_tokens=64,
+        temperature=0.1,
+    )
+
+    result = model.invoke(message)
+    print(result)
+
 def lcel() :
     from langchain_openai import ChatOpenAI
     from langchain_core.prompts import PromptTemplate
@@ -80,5 +100,6 @@ def runnable() :
     print(answer)
 
 # simpleTest()
-lcel()
+prompt()
+# lcel()
 # runnable()
