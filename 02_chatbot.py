@@ -187,6 +187,17 @@ def managingHistory() :
     )
     print(response.content)
 
+    response = with_message_history.stream(
+        {
+            "messages": [HumanMessage(content="tell me a joke")],
+            "language": "English",
+        },
+        config=config,
+    )
+
+    for r in response :
+        print(r.content, end="|")
+
 # simpleExample()
 # messageHistory()
 # promptTemplates()
