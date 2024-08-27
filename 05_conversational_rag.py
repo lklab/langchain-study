@@ -15,17 +15,13 @@ llm = ChatOpenAI(
     model="gpt-3.5-turbo",
 )
 
-def run_by_chains() :
+def construct_retriever() :
     import bs4
-    from langchain.chains import create_retrieval_chain
-    from langchain.chains.combine_documents import create_stuff_documents_chain
     from langchain_chroma import Chroma
     from langchain_community.document_loaders import WebBaseLoader
-    from langchain_core.prompts import ChatPromptTemplate
     from langchain_openai import OpenAIEmbeddings
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-    ### Construct retriever ###
     loader = WebBaseLoader(
         web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent/",),
         bs_kwargs=dict(
@@ -41,6 +37,16 @@ def run_by_chains() :
     vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
     retriever = vectorstore.as_retriever()
 
+    return retriever
+
+def run_by_chains() :
+    from langchain.chains import create_retrieval_chain
+    from langchain.chains.combine_documents import create_stuff_documents_chain
+    from langchain_core.prompts import ChatPromptTemplate
+
+    ### Construct a retriever ###
+    retriever = construct_retriever()
+
     ### Answer question ###
     system_prompt = (
         "You are an assistant for question-answering tasks. "
@@ -52,18 +58,18 @@ def run_by_chains() :
         "{context}"
     )
 
-    # prompt = ChatPromptTemplate.from_messages(
-    #     [
-    #         ("system", system_prompt),
-    #         ("human", "{input}"),
-    #     ]
-    # )
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", "{input}"),
+        ]
+    )
 
-    # question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    # rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+    question_answer_chain = create_stuff_documents_chain(llm, prompt)
+    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
-    # response = rag_chain.invoke({"input": "What is Task Decomposition?"})
-    # print(response["answer"])
+    response = rag_chain.invoke({"input": "What is Task Decomposition?"})
+    print(response["answer"])
 
     ### Contextualize question ###
     from langchain.chains import create_history_aware_retriever
@@ -124,7 +130,7 @@ def run_by_chains() :
         output_messages_key="answer",
     )
 
-    # send query
+    # send queries
     response = conversational_rag_chain.invoke(
         {"input": "What is Task Decomposition?"},
         config={"configurable": {"session_id": "abc123"}}, # constructs a key "abc123" in `store`.
@@ -137,4 +143,48 @@ def run_by_chains() :
     )
     print(response["answer"])
 
-run_by_chains()
+def run_by_agents() :
+    ### Construct a retriever ###
+    retriever = construct_retriever()
+
+    # create memory saver
+    from langgraph.checkpoint.memory import MemorySaver # need to install langgraph: pip install -U langgraph
+
+    memory = MemorySaver()
+
+    ### Build retriever tool ###
+    from langchain.tools.retriever import create_retriever_tool
+    from langgraph.prebuilt import create_react_agent
+
+    tool = create_retriever_tool(
+        retriever,
+        "blog_post_retriever",
+        "Searches and returns excerpts from the Autonomous Agents blog post.",
+    )
+    tools = [tool]
+
+    agent_executor = create_react_agent(llm, tools, checkpointer=memory)
+
+    # send queries
+    from langchain_core.messages import HumanMessage
+
+    config = {"configurable": {"thread_id": "abc123"}}
+    queries = [
+        "Hi! I'm bob",
+        "What is Task Decomposition?",
+        "What according to the blog post are common ways of doing it? redo the search",
+        "What's my name?",
+    ]
+
+    for query in queries :
+        print("query: " + query)
+        print("----")
+        for s in agent_executor.stream(
+            {"messages": [HumanMessage(content=query)]}, config=config
+        ):
+            print(s)
+            print("----")
+        print()
+
+# run_by_chains()
+run_by_agents()
