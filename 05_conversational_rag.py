@@ -58,18 +58,18 @@ def run_by_chains() :
         "{context}"
     )
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            ("human", "{input}"),
-        ]
-    )
+    # prompt = ChatPromptTemplate.from_messages(
+    #     [
+    #         ("system", system_prompt),
+    #         ("human", "{input}"),
+    #     ]
+    # )
 
-    question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+    # question_answer_chain = create_stuff_documents_chain(llm, prompt)
+    # rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
-    response = rag_chain.invoke({"input": "What is Task Decomposition?"})
-    print(response["answer"])
+    # response = rag_chain.invoke({"input": "What is Task Decomposition?"})
+    # print(response["answer"])
 
     ### Contextualize question ###
     from langchain.chains import create_history_aware_retriever
@@ -110,6 +110,26 @@ def run_by_chains() :
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
+    # from langchain_core.messages import AIMessage, HumanMessage
+
+    # chat_history = []
+
+    # question = "What is Task Decomposition?"
+    # ai_msg_1 = rag_chain.invoke({"input": question, "chat_history": chat_history})
+    # print(ai_msg_1["answer"])
+
+    # chat_history.extend(
+    #     [
+    #         HumanMessage(content=question),
+    #         AIMessage(content=ai_msg_1["answer"]),
+    #     ]
+    # )
+
+    # second_question = "What are common ways of doing it?"
+    # ai_msg_2 = rag_chain.invoke({"input": second_question, "chat_history": chat_history})
+
+    # print(ai_msg_2["answer"])
+
     ### Statefully manage chat history ###
     from langchain_core.chat_history import BaseChatMessageHistory
     from langchain_community.chat_message_histories import ChatMessageHistory
@@ -147,14 +167,8 @@ def run_by_agents() :
     ### Construct a retriever ###
     retriever = construct_retriever()
 
-    # create memory saver
-    from langgraph.checkpoint.memory import MemorySaver # need to install langgraph: pip install -U langgraph
-
-    memory = MemorySaver()
-
     ### Build retriever tool ###
     from langchain.tools.retriever import create_retriever_tool
-    from langgraph.prebuilt import create_react_agent
 
     tool = create_retriever_tool(
         retriever,
@@ -163,7 +177,22 @@ def run_by_agents() :
     )
     tools = [tool]
 
+    # create a memory saver
+    from langgraph.checkpoint.memory import MemorySaver # need to install langgraph: pip install -U langgraph
+    memory = MemorySaver()
+
+    # create a agent
+    from langgraph.prebuilt import create_react_agent
     agent_executor = create_react_agent(llm, tools, checkpointer=memory)
+
+    # from langchain_core.messages import HumanMessage
+    # query = "What is Task Decomposition?"
+
+    # for s in agent_executor.stream(
+    #     {"messages": [HumanMessage(content=query)]},
+    # ):
+    #     print(s)
+    #     print("----")
 
     # send queries
     from langchain_core.messages import HumanMessage
