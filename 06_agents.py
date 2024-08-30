@@ -50,12 +50,16 @@ agent_executor = create_react_agent(model, tools)
 
 ### Run the agent ###
 # response = agent_executor.invoke({"messages": [HumanMessage(content="hi!")]})
-# print(response["messages"])
+# for message in response["messages"] :
+#     print(repr(message))
+#     print('-----')
 
 # response = agent_executor.invoke(
 #     {"messages": [HumanMessage(content="whats the weather in sf?")]}
 # )
-# print(response["messages"])
+# for message in response["messages"] :
+#     print(repr(message))
+#     print('-----')
 
 ### Streaming Messages ###
 # for chunk in agent_executor.stream(
