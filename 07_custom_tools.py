@@ -78,16 +78,21 @@ def multiply(a: int, b: int) -> int:
     """Multiply two numbers."""
     return a * b
 
+async def amultiply(a: int, b: int) -> int:
+    """Multiply two numbers."""
+    return a * b
+
 calculator = StructuredTool.from_function(
     func=multiply,
+    coroutine=amultiply,
     name="Calculator",
     description="multiply numbers",
     args_schema=CalculatorInput,
     return_direct=True,
-    # coroutine= ... <- you can specify an async method if desired as well
 )
 
 # print(calculator.invoke({"a": 2, "b": 3}))
+# # print(await calculator.ainvoke({"a": 2, "b": 5}))
 # print(calculator.name)
 # print(calculator.description)
 # print(calculator.args)
@@ -109,9 +114,9 @@ llm = GenericFakeChatModel(messages=iter(["hello matey"]))
 
 chain = prompt | llm | StrOutputParser()
 
-as_tool = chain.as_tool(
-    name="Style responder", description="Description of when to use tool."
-)
+# as_tool = chain.as_tool(
+#     name="Style responder", description="Description of when to use tool."
+# )
 # print(as_tool.args)
 
 ################################################################################
