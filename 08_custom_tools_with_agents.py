@@ -44,9 +44,16 @@ class ClaimTool(BaseTool):
 
     def _run(
         self, role: str, estimations: list[EstimationInput], run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
-        print(f'role={role} estimations={estimations}')
-        return 'completed'
+    ) -> dict:
+        data = {}
+        data['role'] = role
+        data['estimations'] = []
+        for estimation in estimations :
+            data['estimations'].append({
+                'name': estimation.name,
+                'role': estimation.role
+            })
+        return data
 
 class ClaimToolWithoutSpeakerRole(BaseTool):
     name: str = "ClaimToolWithoutSpeakerRole"
@@ -56,9 +63,15 @@ class ClaimToolWithoutSpeakerRole(BaseTool):
 
     def _run(
         self, estimations: list[EstimationInput], run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
-        print(f'estimations={estimations}')
-        return 'completed'
+    ) -> dict:
+        data = {}
+        data['estimations'] = []
+        for estimation in estimations :
+            data['estimations'].append({
+                'name': estimation.name,
+                'role': estimation.role
+            })
+        return data
 
 def fallback() -> str:
     print('fallback')
@@ -88,13 +101,22 @@ agent_executor = create_react_agent(
 ### Run the agent ###
 messages = [
     'I\'m a doctor. I\'ll reveal the investigation results. Ethan\'s role is a citizen, and Benjamin is the mafia. Let\'s all vote for Benjamin.',
-    'Ehtan\'s role is a citizen, and Benjamin is the mafia. Let\'s all vote for Benjamin.',
-    'My role is the teacher. and Benjamin is an evil person.',
-    'Henry is the police.',
-    'Tom is the police.',
-    'What\'s the weather today?',
+    # 'Ehtan\'s role is a citizen, and Benjamin is the mafia. Let\'s all vote for Benjamin.',
+    # 'My role is the teacher. and Benjamin is an evil person.',
+    # 'Henry is the police.',
+    # 'Tom is the police.',
+    # 'What\'s the weather today?',
 ]
+
+from langchain_core.messages.tool import ToolMessage
+import json
 
 for message in messages :
     print(f'\n<{message}>')
-    agent_executor.invoke({'messages': [('user', message)]})
+    response = agent_executor.invoke({'messages': [('user', message)]})
+
+    for message in reversed(response['messages']) :
+        if isinstance(message, ToolMessage) :
+            data = json.loads(message.content)
+            print(data['role'])
+            break
